@@ -22,12 +22,11 @@ class Settings(BaseSettings):
     # Model configuration
     model_path: str = "./models"  # Directory containing GGUF models
     default_model: str = "DeepSeek-Coder-V2-Lite-Instruct-Q4_K_M.gguf"
-    auto_load_model: bool = False  # Auto-load default model on startup
     
     # GGUF inference settings
-    n_gpu_layers: int = 35  # Set to > 0 for GPU acceleration (depends on your GPU VRAM)
-    n_threads: int = 8  # CPU threads for inference
-    context_length: int = 4096  # Maximum context window
+    n_gpu_layers: int = 0  # Set to > 0 for GPU acceleration (depends on your GPU VRAM)
+    n_threads: int = 4  # CPU threads for inference
+    context_length: int = 2048  # Maximum context window
     batch_size: int = 512  # Token batch size
     
     # Model loading strategy
@@ -48,12 +47,10 @@ class Settings(BaseSettings):
     enable_metrics: bool = True
     cors_origins: list[str] = ["*"]  # Adjust for production security
     
-    model_config = {
-        "env_file": ".env.local",
-        "env_file_encoding": "utf-8",
-        "case_sensitive": False,
-        "extra": "ignore"  # Allow extra fields from .env.local
-    }
+    class Config:
+        env_file = ".env.local"
+        env_file_encoding = "utf-8"
+        case_sensitive = False
 
 
 # Global settings instance

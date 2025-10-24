@@ -31,7 +31,6 @@ try {
 const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 8080;
-const PYTHON_SERVER_URL = process.env.PYTHON_SERVER_URL || 'http://localhost:8000';
 
 app.use(cors());
 app.use(express.json());
@@ -88,44 +87,15 @@ app.get('/api/models', async (req: Request, res: Response) => {
       return res.status(503).json({ error: 'Python server unavailable' });
     }
 
-    // Get models from Python server
     const models = await proxyListModels();
-    
-    // Get loaded models from Python server cache
-    const loadedResponse = await fetch(`${PYTHON_SERVER_URL}/v1/models/loaded`);
-    const loadedData = loadedResponse.ok ? await loadedResponse.json() : { loaded_models: [] };
-    const loadedModelNames = new Set(loadedData.loaded_models.map((m: any) => m.name));
-    
-    const formattedModels = models.map((m: any) => {
-      const modelIdWithoutExt = m.name.replace('.gguf', '');
-      const fullModelName = m.name;
-      
-      // Check if this model is loaded in Python server's cache
-      const isLoaded = loadedModelNames.has(fullModelName);
-      
-      // Sync with local state
-      if (isLoaded && !loadedModels.has(modelIdWithoutExt)) {
-        loadedModels.set(modelIdWithoutExt, {
-          modelId: modelIdWithoutExt,
-          gpuIds: [0], // Default to GPU 0, actual GPU assignment handled by llama-cpp-python
-          status: 'ready',
-          tokensPerSecond: 0,
-          requestsInFlight: 0,
-          totalRequests: 0,
-        });
-      } else if (!isLoaded && loadedModels.has(modelIdWithoutExt)) {
-        loadedModels.delete(modelIdWithoutExt);
-      }
-      
-      return {
-        id: modelIdWithoutExt,
-        name: m.name,
-        size: `${(m.size_bytes / (1024 ** 3)).toFixed(1)} GB`,
-        quantization: m.name.includes('Q4') ? 'Q4_K_M' : m.name.includes('Q8') ? 'Q8_0' : 'F16',
-        status: isLoaded ? 'Loaded' : 'Unloaded',
-        loadedOnGpuIds: isLoaded ? [0] : [],
-      };
-    });
+    const formattedModels = models.map((m: any) => ({
+      id: m.name.replace('.gguf', ''),
+      name: m.name,
+      size: `${(m.size_bytes / (1024 ** 3)).toFixed(1)} GB`,
+      quantization: m.name.includes('Q4') ? 'Q4_K_M' : m.name.includes('Q8') ? 'Q8_0' : 'F16',
+      status: loadedModels.get(m.name)?.status === 'ready' ? 'Loaded' : 'Unloaded',
+      loadedOnGpuIds: [],
+    }));
 
     res.json(formattedModels);
   } catch (error: any) {
@@ -144,19 +114,6 @@ app.post('/api/models/:modelId/load', async (req: Request, res: Response) => {
       return res.status(503).json({ error: 'Python server unavailable' });
     }
 
-    // First, load the model in the Python backend
-    const pythonResponse = await fetch(`${PYTHON_SERVER_URL}/v1/models/${modelId}/load`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gpu_layers: gpuIds?.length > 0 ? 35 : 0 }), // Use GPU if gpuIds provided
-    });
-
-    if (!pythonResponse.ok) {
-      const error = await pythonResponse.json();
-      return res.status(pythonResponse.status).json(error);
-    }
-
-    // If successful, track it locally
     loadedModels.set(modelId, {
       modelId,
       gpuIds: gpuIds || [0],
@@ -177,21 +134,6 @@ app.post('/api/models/:modelId/unload', async (req: Request, res: Response) => {
   const { modelId } = req.params;
 
   try {
-    if (!pythonServerHealthy) {
-      return res.status(503).json({ error: 'Python server unavailable' });
-    }
-
-    // First, unload the model in the Python backend
-    const pythonResponse = await fetch(`${PYTHON_SERVER_URL}/v1/models/${modelId}/unload`, {
-      method: 'POST',
-    });
-
-    if (!pythonResponse.ok) {
-      const error = await pythonResponse.json();
-      return res.status(pythonResponse.status).json(error);
-    }
-
-    // If successful, remove from local tracking
     loadedModels.delete(modelId);
     res.json({ status: 'unloaded', modelId });
   } catch (error: any) {
@@ -199,49 +141,16 @@ app.post('/api/models/:modelId/unload', async (req: Request, res: Response) => {
   }
 });
 
-// GPU Info API
+// GPU Info API (mock since Python server handles GPU)
 app.get('/api/gpus', async (req: Request, res: Response) => {
   try {
-    // Try to get real GPU info from Python server
-    if (pythonServerHealthy) {
-      try {
-        const pythonResponse = await fetch(`${PYTHON_SERVER_URL}/v1/gpus`);
-        if (pythonResponse.ok) {
-          const gpuData = await pythonResponse.json();
-          // Transform Python server response to match frontend expectations
-          const gpus = gpuData.map((gpu: any) => ({
-            id: gpu.id,
-            name: gpu.name,
-            utilization: gpu.utilization || 0,
-            memoryUsed: gpu.memory_used || 0,
-            memoryTotal: gpu.memory_total || 0,
-            temperature: gpu.temperature || 0,
-            loadedModelId: gpu.loaded_model || null,
-          }));
-          return res.json(gpus);
-        }
-      } catch (error) {
-        console.log('Failed to get GPU info from Python server, using fallback');
-      }
-    }
-    
-    // Fallback: Your actual GPUs
     res.json([
       {
         id: 0,
-        name: 'NVIDIA GeForce RTX 3080',
+        name: 'GPU (managed by Python server)',
         utilization: 0,
         memoryUsed: 0,
-        memoryTotal: 10240, // 10GB in MB
-        temperature: 0,
-        loadedModelId: null,
-      },
-      {
-        id: 1,
-        name: 'NVIDIA GeForce GTX 750 Ti',
-        utilization: 0,
-        memoryUsed: 0,
-        memoryTotal: 2048, // 2GB in MB
+        memoryTotal: 24,
         temperature: 0,
         loadedModelId: null,
       },
@@ -253,76 +162,15 @@ app.get('/api/gpus', async (req: Request, res: Response) => {
 
 // Server Stats API
 app.get('/api/server-stats', async (req: Request, res: Response) => {
-  // Calculate requests per minute from recent logs
-  const oneMinuteAgo = Date.now() - 60000;
-  const recentRequests = requestLogs.filter(log => 
-    new Date(log.timestamp).getTime() > oneMinuteAgo
-  );
-  
-  // Calculate average tokens per second from loaded models
-  let totalTps = 0;
-  loadedModels.forEach(model => {
-    totalTps += model.tokensPerSecond || 0;
-  });
-  
   res.json({
-    tokensPerSecond: totalTps,
-    requestsPerMinute: recentRequests.length,
+    tokensPerSecond: 0,
+    requestsPerMinute: 0,
     activeConnections,
     totalRequests: requestLogs.length,
     errorCount: requestLogs.filter(l => l.status === 'Error').length,
     averageLatency: 0,
     uptime: process.uptime(),
-    serverEndpoint: `${req.hostname}:${PORT}`,
   });
-});
-
-// Memory Stats API
-app.get('/api/memory-stats', async (req: Request, res: Response) => {
-  try {
-    const os = require('os');
-    
-    // System memory
-    const totalMem = os.totalmem();
-    const freeMem = os.freemem();
-    const usedMem = totalMem - freeMem;
-    
-    // Get VRAM usage from GPUs
-    let totalVram = 0;
-    let usedVram = 0;
-    
-    if (pythonServerHealthy) {
-      try {
-        const pythonResponse = await fetch(`${PYTHON_SERVER_URL}/v1/gpus`);
-        if (pythonResponse.ok) {
-          const gpuData = await pythonResponse.json();
-          gpuData.forEach((gpu: any) => {
-            totalVram += gpu.memory_total || 0;
-            usedVram += gpu.memory_used || 0;
-          });
-        }
-      } catch (error) {
-        console.log('Failed to get GPU memory info');
-      }
-    }
-    
-    res.json({
-      system: {
-        total: Math.round(totalMem / (1024 * 1024)), // MB
-        used: Math.round(usedMem / (1024 * 1024)), // MB
-        free: Math.round(freeMem / (1024 * 1024)), // MB
-        percentage: Math.round((usedMem / totalMem) * 100)
-      },
-      vram: {
-        total: totalVram, // Already in MB from GPU API
-        used: usedVram,
-        free: totalVram - usedVram,
-        percentage: totalVram > 0 ? Math.round((usedVram / totalVram) * 100) : 0
-      }
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
 });
 
 // Request Logs API
@@ -405,11 +253,10 @@ app.post('/api/inference', async (req: Request, res: Response) => {
 });
 
 // Health check
-app.get('/api/health', (req: Request, res: Response) => {
+app.get('/health', (req: Request, res: Response) => {
   res.json({
     status: pythonServerHealthy ? 'ok' : 'degraded',
     pythonServer: pythonServerHealthy ? 'available' : 'unavailable',
-    timestamp: new Date().toISOString(),
   });
 });
 

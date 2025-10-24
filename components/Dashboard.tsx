@@ -9,17 +9,17 @@ const ResponsiveGridLayout = WidthProvider(Responsive);
 const LAYOUT_STORAGE_KEY = 'nexuscore-dashboard-layout';
 const DOCKED_WIDGETS_KEY = 'nexuscore-dashboard-docked';
 const LAYOUT_VERSION_KEY = 'nexuscore-dashboard-layout-version';
-const LAYOUT_VERSION = '7';
+const LAYOUT_VERSION = '2';
 
 
 const StatCard: React.FC<{ icon: React.ReactNode; title: string; value: string | number; }> = ({ icon, title, value }) => (
-    <div className="bg-slate-800/60 rounded-lg p-2.5 border border-slate-700/50 flex items-center space-x-2">
-        <div className="bg-slate-700/50 p-1.5 rounded-full flex-shrink-0">
+    <div className="bg-slate-800/60 rounded-lg p-4 border border-slate-700/50 flex items-center space-x-4">
+        <div className="bg-slate-700/50 p-3 rounded-full">
             {icon}
         </div>
-        <div className="min-w-0 flex-1">
-            <p className="text-xs text-slate-400 truncate">{title}</p>
-            <p className="text-base font-bold text-slate-100 truncate">{value}</p>
+        <div>
+            <p className="text-sm text-slate-400">{title}</p>
+            <p className="text-xl font-bold text-slate-100">{value}</p>
         </div>
     </div>
 );
@@ -30,42 +30,40 @@ const GPUCard: React.FC<{ gpu: GPU, modelName: string | null }> = ({ gpu, modelN
   const tempColor = gpu.temperature > 80 ? 'bg-red-500/80 text-white' : gpu.temperature > 60 ? 'bg-yellow-500/80 text-slate-900 font-bold' : 'bg-sky-500/80 text-white';
   
   return (
-    <div className="bg-slate-800/60 rounded-lg p-3 border border-slate-700/50 flex flex-col justify-between hover:border-sky-500/50 transition-colors duration-200">
+    <div className="bg-slate-800/60 rounded-lg p-4 border border-slate-700/50 flex flex-col justify-between hover:border-sky-500/50 transition-colors duration-200">
       <div>
         <div className="flex justify-between items-center mb-2">
-          <h3 className="font-semibold text-sm text-slate-100 truncate">{`GPU ${gpu.id}: ${gpu.name}`}</h3>
-          <span className={`text-xs font-mono px-1 py-0.5 rounded transition-colors duration-300 ${tempColor}`}>
+          <h3 className="font-bold text-lg text-slate-100">{`GPU ${gpu.id}: ${gpu.name}`}</h3>
+          <span className={`text-xs font-mono px-2 py-1 rounded transition-colors duration-300 ${tempColor}`}>
             {gpu.temperature}°C
           </span>
         </div>
-        <div className="mb-3 h-8 flex items-center bg-slate-900/50 rounded px-2 border border-slate-700/50">
-            <CpuChipIcon className="w-4 h-4 mr-2 text-slate-400 flex-shrink-0"/>
+        <div className="mb-4 h-10 flex items-center bg-slate-900/50 rounded-md px-3 border border-slate-700/50">
+            <CpuChipIcon className="w-5 h-5 mr-3 text-slate-400 flex-shrink-0"/>
             {modelName ? (
-                <span className="text-sm font-medium text-sky-400 truncate" title={modelName}>{modelName}</span>
+                <span className="font-semibold text-sky-400 truncate" title={modelName}>{modelName}</span>
             ) : (
-                <span className="text-sm text-slate-500">Idle</span>
+                <span className="text-slate-500">Idle</span>
             )}
         </div>
       </div>
       <div>
-        <div className="space-y-2">
-          <div>
-            <div className="flex justify-between text-xs mb-1">
-              <span className="text-slate-400">Util</span>
-              <span className="text-slate-300">{gpu.utilization.toFixed(0)}%</span>
-            </div>
-            <div className="w-full bg-slate-700 rounded-full h-1.5">
-              <div className={utilColor + " h-1.5 rounded-full transition-all duration-300"} style={{ width: `${gpu.utilization}%` }}></div>
-            </div>
+        <div className="mb-2">
+          <div className="flex justify-between text-xs mb-1 text-slate-300">
+            <span>Utilization</span>
+            <span>{gpu.utilization.toFixed(0)}%</span>
           </div>
-          <div>
-            <div className="flex justify-between text-xs mb-1">
-              <span className="text-slate-400">Mem</span>
-              <span className={memColor}>{gpu.memoryUsed.toFixed(1)} / {gpu.memoryTotal} GB</span>
-            </div>
-            <div className="w-full bg-slate-700 rounded-full h-1.5">
-              <div className="bg-sky-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${(gpu.memoryUsed / gpu.memoryTotal) * 100}%` }}></div>
-            </div>
+          <div className="w-full bg-slate-700 rounded-full h-2.5">
+            <div className={utilColor + " h-2.5 rounded-full"} style={{ width: `${gpu.utilization}%` }}></div>
+          </div>
+        </div>
+        <div>
+          <div className="flex justify-between text-xs mb-1 text-slate-300">
+            <span>Memory</span>
+            <span className={memColor}>{gpu.memoryUsed.toFixed(1)} / {gpu.memoryTotal} GB</span>
+          </div>
+          <div className="w-full bg-slate-700 rounded-full h-2.5">
+            <div className="bg-sky-500 h-2.5 rounded-full" style={{ width: `${(gpu.memoryUsed / gpu.memoryTotal) * 100}%` }}></div>
           </div>
         </div>
       </div>
@@ -75,34 +73,10 @@ const GPUCard: React.FC<{ gpu: GPU, modelName: string | null }> = ({ gpu, modelN
 
 const defaultLayouts = {
   lg: [
-    { i: 'stats', x: 0, y: 0, w: 12, h: 4, isResizable: false, minH: 4, maxH: 4 },
-    { i: 'gpu-status', x: 0, y: 4, w: 6, h: 6, minH: 4, minW: 4 },
-    { i: 'gpu-chart', x: 6, y: 4, w: 6, h: 6, minH: 4, minW: 4 },
-    { i: 'tps-chart', x: 0, y: 10, w: 12, h: 5, minH: 4, minW: 4 },
-  ],
-  md: [
-    { i: 'stats', x: 0, y: 0, w: 10, h: 2, isResizable: false, minH: 2, maxH: 2 },
-    { i: 'gpu-status', x: 0, y: 2, w: 10, h: 5, minH: 4, minW: 6 },
-    { i: 'gpu-chart', x: 0, y: 7, w: 5, h: 5, minH: 4, minW: 4 },
-    { i: 'tps-chart', x: 5, y: 7, w: 5, h: 5, minH: 4, minW: 4 },
-  ],
-  sm: [
-    { i: 'stats', x: 0, y: 0, w: 6, h: 2, isResizable: false, minH: 2, maxH: 2 },
-    { i: 'gpu-status', x: 0, y: 2, w: 6, h: 5, minH: 4, minW: 4 },
-    { i: 'gpu-chart', x: 0, y: 7, w: 6, h: 5, minH: 4, minW: 4 },
-    { i: 'tps-chart', x: 0, y: 12, w: 6, h: 5, minH: 4, minW: 4 },
-  ],
-  xs: [
-    { i: 'stats', x: 0, y: 0, w: 4, h: 2, isResizable: false, minH: 2, maxH: 2 },
-    { i: 'gpu-status', x: 0, y: 2, w: 4, h: 5, minH: 4, minW: 4 },
-    { i: 'gpu-chart', x: 0, y: 7, w: 4, h: 5, minH: 4, minW: 4 },
-    { i: 'tps-chart', x: 0, y: 12, w: 4, h: 5, minH: 4, minW: 4 },
-  ],
-  xxs: [
-    { i: 'stats', x: 0, y: 0, w: 2, h: 2, isResizable: false, minH: 2, maxH: 2 },
-    { i: 'gpu-status', x: 0, y: 2, w: 2, h: 5, minH: 4, minW: 2 },
-    { i: 'gpu-chart', x: 0, y: 7, w: 2, h: 5, minH: 4, minW: 2 },
-    { i: 'tps-chart', x: 0, y: 12, w: 2, h: 5, minH: 4, minW: 2 },
+    { i: 'stats', x: 0, y: 0, w: 12, h: 3, isResizable: false },
+    { i: 'gpu-chart', x: 0, y: 3, w: 6, h: 7 },
+    { i: 'tps-chart', x: 6, y: 3, w: 6, h: 7 },
+    { i: 'gpu-status', x: 0, y: 10, w: 12, h: 8 },
   ],
 };
 
@@ -153,9 +127,7 @@ export const Dashboard: React.FC<{
   connections: number;
   gpuChartData: any[];
   tpsChartData: any[];
-  serverEndpoint?: string;
-  memoryData?: any[];
-}> = ({ gpus, models, tps, rpm, connections, gpuChartData, tpsChartData, serverEndpoint = 'localhost:8080', memoryData = [] }) => {
+}> = ({ gpus, models, tps, rpm, connections, gpuChartData, tpsChartData }) => {
   const [layouts, setLayouts] = useState(getInitialLayout());
   const [dockedWidgets, setDockedWidgets] = useState(getInitialDockedWidgets());
 
@@ -215,7 +187,7 @@ export const Dashboard: React.FC<{
         onLayoutChange={onLayoutChange}
         breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
         cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-        rowHeight={40}
+        rowHeight={30}
         compactType="vertical"
         preventCollision={false}
         margin={[16, 16]}
@@ -225,12 +197,14 @@ export const Dashboard: React.FC<{
         measureBeforeMount={false}
         draggableHandle=".drag-handle"
       >
-        <div key="stats" className="bg-slate-800/60 rounded-lg p-4 border border-slate-700/50 flex flex-col">
+        <div key="stats" className="bg-slate-800/60 rounded-lg p-6 border border-slate-700/50 flex flex-col">
            {renderWidgetHeader('Server Status', 'stats')}
            {!dockedWidgets.has('stats') && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                <StatCard icon={<GlobeAltIcon className="w-5 h-5 text-sky-400"/>} title="Server Endpoint" value={serverEndpoint} />
-                <StatCard icon={<BoltIcon className="w-5 h-5 text-yellow-400"/>} title="Tokens / Sec" value={tps.toFixed(1)} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard icon={<GlobeAltIcon className="w-6 h-6 text-sky-400"/>} title="Server Endpoint" value="127.0.0.1:8080" />
+                <StatCard icon={<BoltIcon className="w-6 h-6 text-yellow-400"/>} title="Tokens / Sec" value={tps.toFixed(1)} />
+                <StatCard icon={<BoltIcon className="w-6 h-6 text-green-400 opacity-70"/>} title="Requests / Min" value={rpm} />
+                <StatCard icon={<UsersIcon className="w-6 h-6 text-indigo-400"/>} title="Active Connections" value={connections} />
             </div>
            )}
         </div>

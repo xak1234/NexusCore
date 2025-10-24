@@ -6,7 +6,7 @@ Since .env.local is in .gitignore (for security), you must create it manually:
 
 2. Copy this content into it:
 
-VITE_GEMINI_API_KEY=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
+VITE_GEMINI_API_KEY=
 VITE_API_URL=http://localhost:8080/api
 PORT=8080
 MODEL_PATH=./models

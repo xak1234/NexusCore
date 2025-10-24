@@ -122,15 +122,12 @@ class ModelManager:
         self.loading_locks: Dict[str, asyncio.Lock] = {}
         logger.info(f"ModelManager initialized with cache size: {settings.max_cached_models}")
     
-    async def load_model(self, model_name: str, n_gpu_layers: Optional[int] = None) -> Llama:
+    async def load_model(self, model_name: str) -> Llama:
         """
         Load a GGUF model with robust error handling.
         """
         if not LLAMA_CPP_AVAILABLE:
             raise RuntimeError("llama-cpp-python is not available")
-        
-        # Use provided GPU layers or default from settings
-        gpu_layers = n_gpu_layers if n_gpu_layers is not None else settings.n_gpu_layers
         
         cached_model = await self.cache.get(model_name)
         if cached_model is not None:
@@ -146,15 +143,12 @@ class ModelManager:
                 return cached_model
             
             logger.info(f"Loading model from disk: {model_name}")
-            # Ensure .gguf extension is included
-            if not model_name.endswith('.gguf'):
-                model_name = f"{model_name}.gguf"
             model_path = get_model_path(model_name)
             
             try:
                 model = Llama(
                     model_path=str(model_path),
-                    n_gpu_layers=gpu_layers,
+                    n_gpu_layers=settings.n_gpu_layers,
                     n_ctx=settings.context_length,
                     n_threads=settings.n_threads,
                     n_batch=settings.batch_size,

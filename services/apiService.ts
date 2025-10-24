@@ -94,7 +94,7 @@ export interface ServerStats {
 
 export async function fetchServerStats(): Promise<ServerStats> {
   try {
-    const response = await fetch(`${API_BASE_URL}/server-stats`);
+    const response = await fetch(`${API_BASE_URL}/stats`);
     return handleResponse<ServerStats>(response);
   } catch (error) {
     console.error('Error fetching server stats:', error);

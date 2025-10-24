@@ -35,24 +35,12 @@ const App: React.FC = () => {
   const [activeConnections, setActiveConnections] = useState(0);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [integrityCheckPassed, setIntegrityCheckPassed] = useState(false);
-  const [serverEndpoint, setServerEndpoint] = useState('localhost:8080');
-  const [memoryData, setMemoryData] = useState<any[]>([]);
   const [integrityCheckResult, setIntegrityCheckResult] = useState<IntegrityCheckResult | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [showErrorDetails, setShowErrorDetails] = useState(false);
 
   const [gpuChartData, setGpuChartData] = useState(generateInitialChartData(15, 85));
   const [tpsChartData, setTpsChartData] = useState(generateInitialChartData(15, 85));
-  
-  // Initialize memory data with both VRAM and RAM
-  useEffect(() => {
-    const initialData = Array.from({ length: 15 }, (_, i) => ({
-      name: `${i * 2}s`,
-      vram: 0,
-      ram: 0
-    }));
-    setMemoryData(initialData);
-  }, []);
 
   // ========== Integrity Check & Initial Data Fetch ==========
   useEffect(() => {
@@ -98,12 +86,11 @@ const App: React.FC = () => {
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const [gpusData, statsData, logsData, modelsData, memoryStats] = await Promise.all([
+        const [gpusData, statsData, logsData, modelsData] = await Promise.all([
           api.fetchGPUs(),
           api.fetchServerStats(),
           api.fetchLogs(),
           api.fetchModels(),
-          fetch('/api/memory-stats').then(r => r.json()).catch(() => ({ system: { percentage: 0 }, vram: { percentage: 0 } })),
         ]);
         
         setGpus(gpusData);
@@ -112,7 +99,6 @@ const App: React.FC = () => {
         setTokensPerSecond(statsData.tokensPerSecond);
         setRequestsPerMinute(statsData.requestsPerMinute);
         setActiveConnections(statsData.activeConnections);
-        setServerEndpoint(statsData.serverEndpoint || 'localhost:8080');
         
         // Update cache status (mock implementation)
         setCacheStatus({
@@ -127,33 +113,6 @@ const App: React.FC = () => {
             .filter(m => m.status === 'Loaded')
             .reduce((sum, m) => sum + (parseInt(m.size) || 0), 0),
           maxCacheSize: 100,
-        });
-        
-        // Update chart data
-        setGpuChartData(prev => {
-          const newData = [...prev.slice(1), { 
-            name: `${new Date().getSeconds()}s`, 
-            usage: Math.round(gpusData.reduce((acc, gpu) => acc + gpu.utilization, 0) / gpusData.length)
-          }];
-          return newData;
-        });
-        
-        setTpsChartData(prev => {
-          const newData = [...prev.slice(1), { 
-            name: `${new Date().getSeconds()}s`, 
-            tps: statsData.tokensPerSecond
-          }];
-          return newData;
-        });
-        
-        // Update memory chart data
-        setMemoryData(prev => {
-          const newData = [...prev.slice(1), { 
-            name: `${new Date().getSeconds()}s`, 
-            vram: memoryStats.vram?.percentage || 0,
-            ram: memoryStats.system?.percentage || 0
-          }];
-          return newData;
         });
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -254,8 +213,6 @@ const App: React.FC = () => {
             connections={activeConnections}
             gpuChartData={gpuChartData}
             tpsChartData={tpsChartData}
-            serverEndpoint={serverEndpoint}
-            memoryData={memoryData}
         />;
       case View.Models:
         return <ModelManager models={models} gpus={gpus} onLoadModel={handleLoadModel} onUnloadModel={handleUnloadModel} />;
@@ -279,8 +236,6 @@ const App: React.FC = () => {
             connections={activeConnections}
             gpuChartData={gpuChartData}
             tpsChartData={tpsChartData}
-            serverEndpoint={serverEndpoint}
-            memoryData={memoryData}
         />;
     }
   };

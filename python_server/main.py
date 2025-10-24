@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional, AsyncGenerator
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Body
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Query
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -78,15 +78,6 @@ async def lifespan(app: FastAPI):
         else:
             logger.warning(f"⚠️ No GGUF models found in {model_dir}")
     
-    # Auto-load default model if configured
-    if settings.auto_load_model and settings.default_model:
-        try:
-            logger.info(f"🤖 Auto-loading default model: {settings.default_model}")
-            model = await model_manager.load_model(settings.default_model)
-            logger.info(f"✅ Successfully loaded {settings.default_model}")
-        except Exception as e:
-            logger.error(f"❌ Failed to auto-load model: {e}")
-    
     yield
     
     # Shutdown
@@ -121,58 +112,6 @@ async def health_check():
     }
 
 
-@app.get("/v1/gpus")
-async def list_gpus():
-    """Get available GPU information."""
-    try:
-        import subprocess
-        result = subprocess.run(
-            ["nvidia-smi", "--query-gpu=index,name,memory.total,memory.used,utilization.gpu,temperature.gpu", "--format=csv,noheader,nounits"],
-            capture_output=True,
-            text=True
-        )
-        
-        gpus = []
-        if result.returncode == 0:
-            for line in result.stdout.strip().split('\n'):
-                if line:
-                    parts = line.split(', ')
-                    gpus.append({
-                        "id": int(parts[0]),
-                        "name": parts[1],
-                        "memory_total": int(parts[2]),
-                        "memory_used": int(parts[3]),
-                        "utilization": int(parts[4]),
-                        "temperature": int(parts[5]) if parts[5] != '[N/A]' else 0,
-                        "loaded_model": None
-                    })
-        
-        return gpus
-    except Exception as e:
-        logger.error(f"GPU detection error: {e}")
-        # Return mock GPUs if nvidia-smi fails
-        return [
-            {
-                "id": 0,
-                "name": "NVIDIA GeForce RTX 3080",
-                "memory_total": 10240,
-                "memory_used": 0,
-                "utilization": 0,
-                "temperature": 0,
-                "loaded_model": None
-            },
-            {
-                "id": 1,
-                "name": "NVIDIA GeForce GTX 750 Ti",
-                "memory_total": 2048,
-                "memory_used": 0,
-                "utilization": 0,
-                "temperature": 0,
-                "loaded_model": None
-            }
-        ]
-
-
 @app.get("/v1/models")
 async def list_models() -> AvailableModels:
     """List available GGUF models."""
@@ -198,24 +137,6 @@ async def list_models() -> AvailableModels:
     
     except Exception as e:
         logger.error(f"Error listing models: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/v1/models/loaded")
-async def list_loaded_models():
-    """List currently loaded models in cache."""
-    try:
-        loaded_models = []
-        async with model_manager.cache.lock:
-            for model_name in model_manager.cache.cache.keys():
-                loaded_models.append({
-                    "name": model_name,
-                    "access_count": model_manager.cache.access_count.get(model_name, 0),
-                })
-        
-        return {"loaded_models": loaded_models}
-    except Exception as e:
-        logger.error(f"Error listing loaded models: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -383,27 +304,6 @@ async def create_chat_completion(request: ChatCompletionRequest):
         raise
     except Exception as e:
         logger.error(f"Chat completion error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/v1/models/{model_name}/load")
-async def load_model(model_name: str, body: dict = Body(default={})):
-    """Load a specific model into memory."""
-    try:
-        # Get GPU layers from request body
-        gpu_layers = body.get("gpu_layers", settings.n_gpu_layers)
-        
-        # Load the model with specified GPU layers
-        model = await model_manager.load_model(model_name, n_gpu_layers=gpu_layers)
-        
-        return {
-            "status": "loaded", 
-            "model": model_name, 
-            "gpu_layers": gpu_layers,
-            "timestamp": time.time()
-        }
-    except Exception as e:
-        logger.error(f"Load error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

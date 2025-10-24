@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* Custom resizable handle styling */
 .react-grid-item > .react-resizable-handle {
