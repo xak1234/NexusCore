@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusLLM Configuration Editor</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #38bdf8;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #334155;
+            border-radius: 8px;
+        }
+        .section h2 {
+            color: #94a3b8;
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            background: #1e293b;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            color: #e2e8f0;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #38bdf8;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0284c7;
+        }
+        .btn-secondary {
+            background: #475569;
+            color: #e2e8f0;
+        }
+        .btn-secondary:hover {
+            background: #64748b;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .status.success {
+            background: #065f46;
+            color: #6ee7b7;
+            border: 1px solid #10b981;
+        }
+        .status.error {
+            background: #7f1d1d;
+            color: #fca5a5;
+            border: 1px solid #ef4444;
+        }
+        .help-text {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚙️ NexusLLM Configuration Editor</h1>
+        
+        <div id="status" class="status"></div>
+
+        <div class="section">
+            <h2>🐍 Python Server Configuration</h2>
+            <div class="form-group">
+                <label for="port">Server Port</label>
+                <input type="number" id="port" value="8000" min="1000" max="65535">
+                <div class="help-text">Port for the Python GGUF inference server</div>
+            </div>
+            <div class="form-group">
+                <label for="host">Server Host</label>
+                <input type="text" id="host" value="0.0.0.0">
+                <div class="help-text">Use 0.0.0.0 to allow external connections</div>
+            </div>
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="debug">
+                <label for="debug">Enable Debug Mode</label>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🤖 Model Configuration</h2>
+            <div class="form-group">
+                <label for="model_path">Model Directory</label>
+                <input type="text" id="model_path" value="./models">
+                <div class="help-text">Directory containing your GGUF model files</div>
+            </div>
+            <div class="form-group">
+                <label for="default_model">Default Model</label>
+                <select id="default_model">
+                    <option value="LFM2-1.2B-Q8_0.gguf">LFM2-1.2B-Q8_0.gguf (1.2 GB - Fastest)</option>
+                    <option value="LFM2-1.2B-F16.gguf">LFM2-1.2B-F16.gguf (2.2 GB)</option>
+                    <option value="DeepSeek-Coder-V2-Lite-Instruct-Q4_K_M.gguf">DeepSeek-Coder-V2-Lite (9.7 GB - Best)</option>
+                </select>
+                <div class="help-text">Model to load automatically on startup</div>
+            </div>
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="auto_load_model" checked>
+                <label for="auto_load_model">Auto-load Default Model on Startup</label>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎮 GPU/CPU Configuration</h2>
+            <div class="form-group">
+                <label for="n_gpu_layers">GPU Layers</label>
+                <input type="number" id="n_gpu_layers" value="35" min="0" max="100">
+                <div class="help-text">Number of layers to offload to GPU (0 = CPU only, 35+ = GPU acceleration)</div>
+            </div>
+            <div class="form-group">
+                <label for="n_threads">CPU Threads</label>
+                <input type="number" id="n_threads" value="8" min="1" max="32">
+                <div class="help-text">Number of CPU threads for inference</div>
+            </div>
+            <div class="form-group">
+                <label for="context_length">Context Length</label>
+                <input type="number" id="context_length" value="4096" min="512" max="32768" step="512">
+                <div class="help-text">Maximum context window size in tokens</div>
+            </div>
+            <div class="form-group">
+                <label for="batch_size">Batch Size</label>
+                <input type="number" id="batch_size" value="512" min="32" max="2048" step="32">
+                <div class="help-text">Token batch size for processing</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>💾 Cache Configuration</h2>
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="enable_cache" checked>
+                <label for="enable_cache">Enable Model Caching</label>
+            </div>
+            <div class="form-group">
+                <label for="max_cached_models">Max Cached Models</label>
+                <input type="number" id="max_cached_models" value="2" min="1" max="10">
+                <div class="help-text">Maximum number of models to keep in memory</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🔑 API Keys (Optional)</h2>
+            <div class="form-group">
+                <label for="gemini_api_key">Gemini API Key</label>
+                <input type="password" id="gemini_api_key" placeholder="Leave empty if not using Gemini">
+                <div class="help-text">For AI-powered log analysis features</div>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn-primary" onclick="saveConfig()">💾 Save Configuration</button>
+            <button class="btn-secondary" onclick="loadConfig()">🔄 Reload</button>
+            <button class="btn-secondary" onclick="resetDefaults()">🔧 Reset to Defaults</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration template
+        const configTemplate = `# NexusCore LLM Server - Environment Configuration
+
+# Python Server Configuration (for GGUF model inference)
+HOST={host}
+PORT={port}
+DEBUG={debug}
+
+# Model Configuration
+MODEL_PATH={model_path}
+DEFAULT_MODEL={default_model}
+AUTO_LOAD_MODEL={auto_load_model}
+
+# GPU/CPU Configuration
+N_GPU_LAYERS={n_gpu_layers}
+N_THREADS={n_threads}
+CONTEXT_LENGTH={context_length}
+BATCH_SIZE={batch_size}
+
+# Cache Configuration
+ENABLE_CACHE={enable_cache}
+CACHE_DIR=./cache
+MAX_CACHED_MODELS={max_cached_models}
+
+# Node.js Server Configuration
+VITE_API_URL=http://localhost:8080/api
+PYTHON_SERVER_URL=http://localhost:{port}
+
+# Optional: Gemini API for Log Analysis
+VITE_GEMINI_API_KEY={gemini_api_key}
+
+# llama.cpp Server Path (if using llama-server instead of Python)
+LLAMA_SERVER_PATH=llama-server`;
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 5000);
+        }
+
+        function getFormValues() {
+            return {
+                host: document.getElementById('host').value,
+                port: document.getElementById('port').value,
+                debug: document.getElementById('debug').checked ? 'True' : 'False',
+                model_path: document.getElementById('model_path').value,
+                default_model: document.getElementById('default_model').value,
+                auto_load_model: document.getElementById('auto_load_model').checked ? 'true' : 'false',
+                n_gpu_layers: document.getElementById('n_gpu_layers').value,
+                n_threads: document.getElementById('n_threads').value,
+                context_length: document.getElementById('context_length').value,
+                batch_size: document.getElementById('batch_size').value,
+                enable_cache: document.getElementById('enable_cache').checked ? 'True' : 'False',
+                max_cached_models: document.getElementById('max_cached_models').value,
+                gemini_api_key: document.getElementById('gemini_api_key').value || ''
+            };
+        }
+
+        function saveConfig() {
+            const values = getFormValues();
+            let config = configTemplate;
+            
+            // Replace placeholders
+            Object.keys(values).forEach(key => {
+                config = config.replace(new RegExp(`{${key}}`, 'g'), values[key]);
+            });
+
+            // Create blob and download
+            const blob = new Blob([config], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '.env.local';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showStatus('Configuration saved! Move the downloaded .env.local file to your NexusLLM directory.', 'success');
+        }
+
+        function loadConfig() {
+            // In a real implementation, this would load from the actual .env.local file
+            showStatus('To load existing configuration, edit the values above based on your .env.local file.', 'error');
+        }
+
+        function resetDefaults() {
+            document.getElementById('host').value = '0.0.0.0';
+            document.getElementById('port').value = '8000';
+            document.getElementById('debug').checked = false;
+            document.getElementById('model_path').value = './models';
+            document.getElementById('default_model').value = 'LFM2-1.2B-Q8_0.gguf';
+            document.getElementById('auto_load_model').checked = true;
+            document.getElementById('n_gpu_layers').value = '35';
+            document.getElementById('n_threads').value = '8';
+            document.getElementById('context_length').value = '4096';
+            document.getElementById('batch_size').value = '512';
+            document.getElementById('enable_cache').checked = true;
+            document.getElementById('max_cached_models').value = '2';
+            document.getElementById('gemini_api_key').value = '';
+            
+            showStatus('Configuration reset to defaults!', 'success');
+        }
+    </script>
+</body>
+</html>
