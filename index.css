@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom resizable handle styling */
+.react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 0px;
+  right: 0px;
+  cursor: se-resize;
+  background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg width=%2710%27 height=%2710%27 viewBox=%270 0 10 10%27 fill=%27none%27 xmlns=%27http://www.w3.org/2000/svg%27%3e%3cpath d=%27M0 10L10 0V10H0Z%27 fill=%27%2364748b%27/%3e%3c/svg%3e');
+  background-position: bottom right;
+  background-repeat: no-repeat;
+  background-origin: content-box;
+  box-sizing: border-box;
+  padding: 4px;
+}
+
+.react-grid-item.react-grid-placeholder {
+  background: rgba(30, 213, 242, 0.1);
+  border-radius: 0.5rem;
+  border: 2px dashed #0ea5e9;
+  transition: all 200ms ease;
+}

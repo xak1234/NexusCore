@@ -1,0 +1,33 @@
+IMPORTANT: You need to manually create a .env.local file
+
+Since .env.local is in .gitignore (for security), you must create it manually:
+
+1. Create a new file named ".env.local" in the project root directory
+
+2. Copy this content into it:
+
+VITE_GEMINI_API_KEY=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
+VITE_API_URL=http://localhost:8080/api
+PORT=8080
+MODEL_PATH=./models
+
+3. IMPORTANT NOTE: The API key above appears to be an OpenAI key (starts with sk-proj-).
+   You need a GOOGLE GEMINI API KEY instead!
+   
+   Get your Gemini API key here: https://makersuite.google.com/app/apikey
+   
+   Then replace the VITE_GEMINI_API_KEY value with your actual Gemini key.
+
+4. Save the file as ".env.local" in the root directory (same level as package.json)
+
+5. The file should look like this:
+
+   VITE_GEMINI_API_KEY=AIzaSyD_your_actual_gemini_key_here
+   VITE_API_URL=http://localhost:8080/api
+   PORT=8080
+   MODEL_PATH=./models
+
+After creating this file, you can run: npm run dev:all
+
+DO NOT commit .env.local to git - it's already in .gitignore for security!
+

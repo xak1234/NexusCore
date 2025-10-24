@@ -1,0 +1,5 @@
+{
+  "name": "NexusCore LLM Server",
+  "description": "A dashboard to manage and monitor a local multi-GPU LLM server. Utilize Gemini to analyze performance, generate configurations, and optimize model interactions for local development environments like VSCode, Cursor, and Warp.",
+  "requestFramePermissions": []
+}

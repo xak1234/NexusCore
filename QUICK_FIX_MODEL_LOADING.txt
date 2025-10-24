@@ -1,0 +1,154 @@
+================================================================================
+                   MODEL BINARY LOADING - QUICK FIX GUIDE
+================================================================================
+
+PROBLEM: "Failed to load binary for the model"
+
+MOST LIKELY CAUSE: Missing llama.cpp server binary
+================================================================================
+
+IMMEDIATE SOLUTIONS (Try in order):
+
+1. INSTALL LLAMA.CPP
+   ─────────────────────────────────────────────────────────────────────────
+   Windows/macOS/Linux:
+   
+   git clone https://github.com/ggerganov/llama.cpp.git
+   cd llama.cpp
+   make server
+   
+   Output: ./server (or ./server.exe on Windows)
+
+2. SET ENVIRONMENT VARIABLE
+   ─────────────────────────────────────────────────────────────────────────
+   Windows (PowerShell):
+   $env:LLAMA_SERVER_PATH = "C:\Users\YourName\llama.cpp\server.exe"
+   
+   Windows (CMD):
+   set LLAMA_SERVER_PATH=C:\Users\YourName\llama.cpp\server.exe
+   
+   macOS/Linux:
+   export LLAMA_SERVER_PATH="/path/to/llama.cpp/server"
+   
+   Add to .env.local:
+   LLAMA_SERVER_PATH=/path/to/llama-server
+
+3. VERIFY SETUP
+   ─────────────────────────────────────────────────────────────────────────
+   Test if llama-server is accessible:
+   
+   Windows: where llama-server
+   macOS:   which llama-server
+   Linux:   which llama-server
+   
+   Should output the path to the binary
+
+4. VERIFY MODEL FILES
+   ─────────────────────────────────────────────────────────────────────────
+   Confirm models are present:
+   - models/DeepSeek-Coder-V2-Lite-Instruct-Q4_K_M.gguf
+   - models/LFM2-1.2B-Q8_0.gguf
+   - models/LFM2-1.2B-F16.gguf
+   
+   Check file sizes (should be > 1GB):
+   Windows: dir models\*.gguf
+   macOS:   ls -lh models/
+
+5. RESTART SERVERS
+   ─────────────────────────────────────────────────────────────────────────
+   Stop all servers first:
+   - Close browser
+   - Kill npm processes
+   - Kill Python processes
+   
+   Then restart in this order:
+   
+   Terminal 1 (Python server):
+   python -m python_server.main
+   → Should show: [Integrity Check] Status: ✓ PASSED
+   
+   Terminal 2 (Frontend):
+   npm run dev
+   → Open http://localhost:5173
+
+6. TEST API
+   ─────────────────────────────────────────────────────────────────────────
+   Verify services are running:
+   
+   Python API:
+   curl http://localhost:8000/health
+   
+   Model list:
+   curl http://localhost:8000/v1/models
+
+================================================================================
+                              SECONDARY CHECKS
+================================================================================
+
+IF ABOVE DOESN'T WORK:
+
+□ Disk Space - Models need 20GB total free space
+  Windows: Right-click C: → Properties
+  macOS:   About This Mac → Storage
+  
+□ Model Corruption - Redownload if file seems wrong
+  rm models/DeepSeek-Coder-V2-Lite-Instruct-Q4_K_M.gguf
+  (Then download fresh from Hugging Face)
+
+□ Permissions (macOS/Linux)
+  chmod 644 models/*.gguf
+  chmod 755 models/
+
+□ Python Environment
+  python --version  (Should be 3.9+)
+  pip list | grep llama-cpp-python
+
+□ Configuration File
+  Check .env.local exists with correct settings:
+  MODEL_PATH=./models
+  DEFAULT_MODEL=DeepSeek-Coder-V2-Lite-Instruct-Q4_K_M.gguf
+  N_GPU_LAYERS=0 (if having GPU issues)
+
+================================================================================
+                              TROUBLESHOOTING
+================================================================================
+
+ERROR: "llama-server: command not found"
+FIX:   Install llama.cpp from source or set LLAMA_SERVER_PATH
+
+ERROR: "Model failed to load"
+FIX:   Check file integrity, redownload if needed
+
+ERROR: "Model path not found"
+FIX:   Verify MODEL_PATH in .env.local and models directory exists
+
+ERROR: "CUDA out of memory"
+FIX:   Set N_GPU_LAYERS=0 in .env.local to use CPU
+
+ERROR: "Connection refused"
+FIX:   Ensure Python server is running on port 8000
+
+ERROR: "404 Not Found"
+FIX:   Check VITE_API_URL matches your backend port
+
+ERROR: "Permission denied"
+FIX:   Run chmod 644 models/*.gguf (macOS/Linux)
+
+================================================================================
+                           DETAILED HELP AVAILABLE
+================================================================================
+
+For complete troubleshooting guide, see:
+→ MODEL_LOADING_FIX.md
+
+For Python server setup:
+→ PYTHON_SERVER_README.md
+→ PYTHON_QUICKSTART.md
+
+For testing and validation:
+→ TESTING_COMPREHENSIVE.md
+
+For GUI implementation:
+→ GUI_GGUF_IMPLEMENTATION_SUMMARY.md
+
+================================================================================
